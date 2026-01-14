@@ -82,8 +82,16 @@
     const p = document.createElement('p'); p.textContent = 'This is your dashboard.';
     const openServeys = document.createElement('button'); openServeys.className='btn'; openServeys.textContent='Manage Serveys';
     openServeys.addEventListener('click', ()=> location.hash = '#/serveys');
-    card.appendChild(welcome); card.appendChild(p);
     card.appendChild(openServeys);
+    // if admin, show admin link
+    try{
+      if(state && state.user && state.user.role === 'admin'){
+        const adminBtn = document.createElement('button'); adminBtn.className='btn secondary'; adminBtn.textContent='Admin';
+        adminBtn.addEventListener('click', ()=> location.hash = '#/admin');
+        card.appendChild(adminBtn);
+      }
+    }catch(e){}
+    card.appendChild(welcome); card.appendChild(p);
     root.appendChild(card);
   }
 
@@ -95,6 +103,7 @@
     if(hash === '/register'){ renderForm('register'); return }
     if(hash === '/home'){ if(state && state.user){ renderHome(); } else { location.hash = '#/login' } return }
     if(hash === '/serveys'){ if(state && state.user){ if(window.ServeyUI && ServeyUI.renderServeyPage){ ServeyUI.renderServeyPage(root, mountHeader); } else { location.hash = '#/home' } } else { location.hash = '#/login' } return }
+    if(hash === '/admin'){ if(state && state.user && state.user.role === 'admin'){ if(window.ServeyAdmin && ServeyAdmin.renderAdminPage){ ServeyAdmin.renderAdminPage(root, mountHeader); } else { location.hash = '#/home' } } else { location.hash = '#/login' } return }
     renderLanding();
   }
 
