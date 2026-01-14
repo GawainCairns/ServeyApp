@@ -1,23 +1,32 @@
 // Admin UI and API helpers for user management
 (function(){
   const API = 'http://localhost:3000/admin';
+  const getAuthHeaders = (hasBody = false) => {
+    const s = (window.ServeyState && ServeyState.get && ServeyState.get()) || null;
+    const headers = {};
+    if (hasBody) headers['Content-Type'] = 'application/json';
+    if (s && s.token) headers['Authorization'] = 'Bearer ' + s.token;
+    return headers;
+  };
 
   async function apiCreateUser(data){
-    const res = await fetch(API + '/user', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
+    const res = await fetch(API + '/user', {method:'POST', headers:getAuthHeaders(true), body:JSON.stringify(data)});
     const body = await res.json(); if(!res.ok) throw body; return body;
   }
   async function apiUpdateUser(id,data){
-    const res = await fetch(API + '/user/'+encodeURIComponent(id), {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
+    const res = await fetch(API + '/user/'+encodeURIComponent(id), {method:'PUT', headers:getAuthHeaders(true), body:JSON.stringify(data)});
     const body = await res.json(); if(!res.ok) throw body; return body;
   }
   async function apiGetAllUsers(){
-    const res = await fetch(API + '/users'); const body = await res.json(); if(!res.ok) throw body; return body;
+    const res = await fetch(API + '/users', {headers: getAuthHeaders(false)});
+    const body = await res.json(); if(!res.ok) throw body; return body;
   }
   async function apiGetUser(id){
-    const res = await fetch(API + '/user/'+encodeURIComponent(id)); const body = await res.json(); if(!res.ok) throw body; return body;
+    const res = await fetch(API + '/user/'+encodeURIComponent(id), {headers: getAuthHeaders(false)});
+    const body = await res.json(); if(!res.ok) throw body; return body;
   }
   async function apiDeleteUser(id){
-    const res = await fetch(API + '/user/'+encodeURIComponent(id), {method:'DELETE'});
+    const res = await fetch(API + '/user/'+encodeURIComponent(id), {method:'DELETE', headers: getAuthHeaders(false)});
     if(res.status === 204 || res.status === 200) return {ok:true};
     const body = await res.json(); if(!res.ok) throw body; return body;
   }
