@@ -19,4 +19,14 @@ input[type=text],input[type=email],input[type=password]{padding:10px;border:1px 
 .link{background:none;border:0;color:var(--accent);cursor:pointer}
 .error{color:#b00020}
 
+.servey-layout{display:flex;gap:16px}
+.servey-layout .servey-form-wrap{flex:1}
+.servey-layout .servey-side{width:360px}
+.servey-list{display:flex;flex-direction:column;gap:8px}
+.servey-item{padding:10px}
+.servey-notice{padding:8px 10px;border-radius:8px;margin-bottom:8px;background:#ecfccb}
+.muted{color:var(--muted);font-size:13px}
+.meta{font-size:12px;color:#374151;margin-top:6px}
+.find-row{display:flex;gap:8px;margin-bottom:8px}
+
 @media (max-width:720px){.hero{flex-direction:column;align-items:flex-start}}

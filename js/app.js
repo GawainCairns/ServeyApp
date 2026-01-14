@@ -20,7 +20,9 @@
     loginBtn.addEventListener('click', ()=> location.hash = '#/login');
     const regBtn = document.createElement('button'); regBtn.className='btn secondary'; regBtn.textContent='Register';
     regBtn.addEventListener('click', ()=> location.hash = '#/register');
-    cta.appendChild(loginBtn); cta.appendChild(regBtn);
+    const serveysBtn = document.createElement('button'); serveysBtn.className='btn secondary'; serveysBtn.textContent='Serveys';
+    serveysBtn.addEventListener('click', ()=> location.hash = '#/serveys');
+    cta.appendChild(loginBtn); cta.appendChild(regBtn); cta.appendChild(serveysBtn);
     left.appendChild(cta);
 
     const right = document.createElement('div'); right.className='card'; right.innerHTML = '<strong>Features</strong><ul><li>Easy surveys</li><li>Reports</li></ul>';
@@ -78,7 +80,10 @@
     const who = (state && state.user && (state.user.name || state.user.email)) || 'User';
     welcome.textContent = `Welcome, ${who}`;
     const p = document.createElement('p'); p.textContent = 'This is your dashboard.';
+    const openServeys = document.createElement('button'); openServeys.className='btn'; openServeys.textContent='Manage Serveys';
+    openServeys.addEventListener('click', ()=> location.hash = '#/serveys');
     card.appendChild(welcome); card.appendChild(p);
+    card.appendChild(openServeys);
     root.appendChild(card);
   }
 
@@ -89,6 +94,7 @@
     if(hash === '/login'){ renderForm('login'); return }
     if(hash === '/register'){ renderForm('register'); return }
     if(hash === '/home'){ if(state && state.user){ renderHome(); } else { location.hash = '#/login' } return }
+    if(hash === '/serveys'){ if(state && state.user){ if(window.ServeyUI && ServeyUI.renderServeyPage){ ServeyUI.renderServeyPage(root, mountHeader); } else { location.hash = '#/home' } } else { location.hash = '#/login' } return }
     renderLanding();
   }
 
