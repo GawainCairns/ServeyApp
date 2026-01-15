@@ -3,7 +3,8 @@
   function render(){
     const root = document.getElementById('app');
     root.innerHTML = '';
-    // header will append itself via header.js
+    // ensure header is mounted before content so it isn't removed by innerHTML
+    try{ if(window.ServeyHeader && document.getElementById('app')) ServeyHeader.createHeader(document.getElementById('app')); }catch(e){}
     const wrap = document.createElement('div');
     wrap.className = 'card about-page';
 
