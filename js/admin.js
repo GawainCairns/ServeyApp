@@ -144,8 +144,22 @@
           const tr = document.createElement('tr');
           tr.innerHTML = `<td>${u.id}</td><td>${u.name}</td><td>${u.email}</td><td>${u.role}</td>`;
           const actions = document.createElement('td');
-          const view = document.createElement('button'); view.className='link'; view.textContent='View';
-          view.addEventListener('click', ()=>{ qId.value = u.id; qGet.click(); });
+          const view = document.createElement('button'); view.className='link'; view.textContent='Edit';
+          view.addEventListener('click', ()=>{
+            // populate the update form with this user's data for editing
+            try{
+              idIn.value = u.id;
+              uName.value = u.name || '';
+              uEmail.value = u.email || '';
+              uPass.value = '';
+              uRole.value = u.role || 'user';
+              // bring update card into view
+              updateCard.scrollIntoView({behavior:'smooth', block:'center'});
+              showMessage(updateCard, 'Loaded user into edit form', true);
+            }catch(e){ console.error(e) }
+          });
+          // also allow clicking the whole row to edit
+          tr.addEventListener('click', (evt)=>{ if(evt.target===tr) view.click(); });
           const del = document.createElement('button'); del.className='link danger'; del.textContent='Delete';
           del.addEventListener('click', async ()=>{
             if(!confirm('Delete user '+u.id+'?')) return;
@@ -171,6 +185,8 @@
       if(!confirm('Delete user '+id+'?')) return;
       try{ await apiDeleteUser(id); showMessage(quickCard,'User deleted', true); }catch(er){ showMessage(quickCard,'Delete failed: '+(er && er.message ? er.message : JSON.stringify(er)), false) }
     });
+    // auto-load users when admin page opens
+    try{ loadBtn.click(); }catch(e){}
   }
 
   window.ServeyAdmin = { renderAdminPage };
