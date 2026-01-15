@@ -40,3 +40,17 @@ input[type=text],input[type=email],input[type=password]{padding:10px;border:1px 
 .contact-item{display:flex;justify-content:space-between;gap:12px;padding:10px;border-radius:8px;border:1px solid #f1f5f9;margin-bottom:8px;align-items:center}
 .contact-name{font-weight:600}
 .contact-item a{color:var(--accent)}
+
+/* Footer */
+.site-footer{background:#0f1724;color:#e6eefc;padding:26px 18px;margin-top:28px;border-top:1px solid rgba(255,255,255,0.04)}
+.site-footer .footer-inner{max-width:980px;margin:0 auto;display:flex;gap:20px;align-items:flex-start}
+.site-footer .footer-admins{display:flex;gap:12px;flex:1}
+.footer-admin{background:rgba(255,255,255,0.03);padding:12px;border-radius:10px;min-width:180px}
+.footer-admin .a-name{font-weight:700;color:#fff}
+.footer-admin .a-role{font-size:13px;color:#cbd5e1;margin-top:6px}
+.footer-admin .a-email{font-size:13px;color:#93c5fd;margin-top:8px}
+.footer-features{width:320px}
+.footer-features h4{margin:0 0 8px}
+.feature-list{margin:0;padding-left:18px}
+.feature-list li{margin-bottom:6px}
+.footer-bottom{max-width:980px;margin:12px auto 0;color:#9aa7c7;font-size:13px}
