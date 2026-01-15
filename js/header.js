@@ -5,6 +5,12 @@
     el.className = 'header card';
     const left = document.createElement('div');
     left.innerHTML = '<strong>ServeyApp</strong>';
+    const aboutLink = document.createElement('a');
+    aboutLink.className = 'link';
+    aboutLink.href = 'about.html';
+    aboutLink.textContent = 'About';
+    aboutLink.style.marginLeft = '12px';
+    left.appendChild(aboutLink);
     const right = document.createElement('div');
     right.className = 'center';
 
