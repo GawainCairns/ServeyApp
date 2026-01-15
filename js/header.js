@@ -10,6 +10,10 @@
   }
 
   function createHeader(container){
+    // if header already mounted in this container, reuse it
+    const existing = container.querySelector('.header');
+    if(existing) return existing;
+
     const el = document.createElement('div');
     el.className = 'header card';
 
@@ -22,6 +26,7 @@
     const userPill = document.createElement('div');
     userPill.className = 'user-pill';
     userPill.textContent = '';
+    userPill.style.display = 'none';
 
     const logoutBtn = document.createElement('button');
     logoutBtn.className = 'link';
@@ -58,8 +63,8 @@
         const aboutLink = createLink('About', 'about.html'); left.appendChild(aboutLink); dynamicLinks.push(aboutLink);
         const loginLink = createLink('Login', 'index.html#/login'); left.appendChild(loginLink); dynamicLinks.push(loginLink);
         const regLink = createLink('Register', 'index.html#/register'); left.appendChild(regLink); dynamicLinks.push(regLink);
-
         userPill.textContent = '';
+        userPill.style.display = 'none';
         logoutBtn.style.display = 'none';
       } else {
         // logged-in: Dashboard always
@@ -73,6 +78,7 @@
         }catch(e){}
 
         userPill.textContent = state.user.name || state.user.email || 'User';
+        userPill.style.display = '';
         logoutBtn.style.display = '';
       }
     }
