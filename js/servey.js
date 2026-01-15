@@ -30,6 +30,17 @@
   async function fetchById(id){ return api('/servey/' + encodeURIComponent(id)); }
   async function fetchUser(id){ return api('/user/' + encodeURIComponent(id)); }
 
+  // Question & Answer APIs
+  async function fetchQuestions(serveyId){ return api('/servey/' + encodeURIComponent(serveyId) + '/question'); }
+  async function fetchQuestionById(serveyId, qid){ return api('/servey/' + encodeURIComponent(serveyId) + '/question/' + encodeURIComponent(qid)); }
+  async function createQuestion(serveyId, payload){ return api('/servey/' + encodeURIComponent(serveyId) + '/question', {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify(payload)}); }
+  async function updateQuestion(serveyId, qid, payload){ return api('/servey/' + encodeURIComponent(serveyId) + '/question/' + encodeURIComponent(qid), {method:'PUT', headers:{'content-type':'application/json'}, body:JSON.stringify(payload)}); }
+
+  async function fetchAnswers(serveyId){ return api('/servey/' + encodeURIComponent(serveyId) + '/answer'); }
+  async function fetchAnswerById(serveyId, aid){ return api('/servey/' + encodeURIComponent(serveyId) + '/answer/' + encodeURIComponent(aid)); }
+  async function createAnswer(serveyId, payload){ return api('/servey/' + encodeURIComponent(serveyId) + '/answer', {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify(payload)}); }
+  async function updateAnswer(serveyId, aid, payload){ return api('/servey/' + encodeURIComponent(serveyId) + '/answer/' + encodeURIComponent(aid), {method:'PUT', headers:{'content-type':'application/json'}, body:JSON.stringify(payload)}); }
+
   const userCache = new Map();
   async function getUserName(id){
     if(!id) return 'Unknown';
@@ -91,6 +102,20 @@
     const updateClear = document.createElement('button'); updateClear.type='button'; updateClear.className='btn secondary'; updateClear.textContent='Clear';
     updateForm.appendChild(idUpdate); updateForm.appendChild(nameUpdate); updateForm.appendChild(descUpdate); updateForm.appendChild(updateSubmit); updateForm.appendChild(updateClear);
     left.appendChild(updateH); left.appendChild(updateForm);
+
+    // Questions management (appears when editing / managing a servey)
+    const questionsCard = document.createElement('div'); questionsCard.className='card'; questionsCard.style.marginTop='12px';
+    questionsCard.innerHTML = '<h4>Questions</h4>';
+    const questionsArea = document.createElement('div'); questionsArea.className='servey-questions';
+    // add question form
+    const qForm = document.createElement('form'); qForm.className='question-form';
+    const qText = document.createElement('input'); qText.name='question'; qText.placeholder='Question text'; qText.type='text'; qText.style.width='100%';
+    const qType = document.createElement('select'); qType.name='type';
+    ['text','multiple','boolean'].forEach(t=>{ const o=document.createElement('option'); o.value=t; o.textContent=t; qType.appendChild(o); });
+    const qSubmit = document.createElement('button'); qSubmit.className='btn'; qSubmit.type='submit'; qSubmit.textContent='Add Question';
+    qForm.appendChild(qText); qForm.appendChild(qType); qForm.appendChild(qSubmit);
+    questionsCard.appendChild(qForm); questionsCard.appendChild(questionsArea);
+    left.appendChild(questionsCard);
 
     // right: lists + search
     const right = document.createElement('div'); right.className='servey-side';
@@ -164,7 +189,7 @@
       }catch(er){ mineList.innerHTML = 'Failed to load'; }
     }
 
-    function loadIntoUpdateForm(s){ idUpdate.value = s.id; nameUpdate.value = s.name||''; descUpdate.value = s.discription||''; updateSubmit.textContent = 'Update Servey'; if(updateSelect){ updateSelect.value = s.id; } }
+    function loadIntoUpdateForm(s){ idUpdate.value = s.id; nameUpdate.value = s.name||''; descUpdate.value = s.discription||''; updateSubmit.textContent = 'Update Servey'; if(updateSelect){ updateSelect.value = s.id; } if(s && s.id){ refreshQuestions(s.id); } }
 
     // Create handler
     createForm.addEventListener('submit', async (e)=>{
@@ -174,10 +199,12 @@
       if(!uid){ showMessage(container, 'You must be signed in to create a servey', false); return }
       payload.creator = uid;
       try{
-        await createServey(payload);
+        const res = await createServey(payload);
         showMessage(container, 'Servey created successfully');
         createName.value=''; createDesc.value='';
         await refreshAllLists(); await refreshMineList();
+        // if server returned id, load into update form for immediate question management
+        if(res && (res.id || res.insertId)){ const sid = res.id || res.insertId; idUpdate.value = sid; nameUpdate.value = payload.name||''; descUpdate.value = payload.discription||''; updateSubmit.textContent='Update Servey'; if(updateSelect) updateSelect.value = sid; refreshQuestions(sid); }
       }catch(er){ showMessage(container, 'Error: '+(er.message||er), false); }
     });
 
@@ -185,14 +212,17 @@
     updateForm.addEventListener('submit', async (e)=>{
       e.preventDefault();
       if(!idUpdate.value){ showMessage(container, 'Select a servey to update', false); return }
+      const sid = idUpdate.value;
       const payload = { name: nameUpdate.value, discription: descUpdate.value };
       const uid = ServeyState.get() && ServeyState.get().user && ServeyState.get().user.id;
       if(uid) payload.creator = uid;
       try{
-        await updateServey(idUpdate.value, payload);
+        await updateServey(sid, payload);
         showMessage(container, 'Servey updated successfully');
-        idUpdate.value=''; nameUpdate.value=''; descUpdate.value=''; updateSubmit.textContent='Update Servey';
         await refreshAllLists(); await refreshMineList();
+        // refresh questions for the updated servey
+        refreshQuestions(sid);
+        idUpdate.value=''; nameUpdate.value=''; descUpdate.value=''; updateSubmit.textContent='Update Servey';
       }catch(er){ showMessage(container, 'Error: '+(er.message||er), false); }
     });
 
@@ -224,6 +254,98 @@
 
     // insert updateSelect into update form area (before hidden id)
     updateForm.insertBefore(updateSelect, idUpdate);
+
+    // Questions refresh / render helpers
+    async function refreshQuestions(serveyId){
+      if(!questionsArea) return;
+      if(!serveyId){ questionsArea.innerHTML = '<div class="muted">Select a servey to manage questions</div>'; return; }
+      questionsArea.innerHTML = 'Loading...';
+      try{
+        const qs = await fetchQuestions(serveyId);
+        questionsArea.innerHTML = '';
+        const list = document.createElement('div'); list.className='questions-list';
+        (Array.isArray(qs)?qs:[]).forEach(q=> list.appendChild(renderQuestionItem(q, serveyId)) );
+        if(list.children.length === 0) questionsArea.innerHTML = '<div class="muted">No questions yet</div>';
+        if(list.children.length > 0) questionsArea.appendChild(list);
+      }catch(e){ questionsArea.innerHTML = '<div class="muted">Failed to load questions</div>'; }
+    }
+
+    function renderQuestionItem(q, serveyId){
+      const div = document.createElement('div'); div.className='question-item card';
+      div.innerHTML = `<strong>#${q.id} ${escapeHtml(q.question||'')}</strong><div class="muted">type: ${escapeHtml(q.type||'')}</div>`;
+      const edit = document.createElement('button'); edit.className='link'; edit.textContent='Edit';
+      edit.addEventListener('click', ()=>{ qText.value = q.question||''; qType.value = q.type||'text'; qSubmit.textContent='Save Question'; qSubmit.dataset.editing = q.id; });
+      const manage = document.createElement('button'); manage.className='link'; manage.textContent='Manage Answers';
+      div.appendChild(edit); div.appendChild(manage);
+
+      const answersArea = document.createElement('div'); answersArea.className='answers-area'; answersArea.style.display='none'; answersArea.style.marginTop='8px';
+      manage.addEventListener('click', async ()=>{
+        if(answersArea.style.display === 'none'){
+          answersArea.style.display = 'block'; answersArea.innerHTML = 'Loading...';
+          try{
+            const allAnswers = await fetchAnswers(serveyId);
+            const qAnswers = (Array.isArray(allAnswers)?allAnswers:[]).filter(a=> String(a.question_id) === String(q.id));
+            renderAnswersList(qAnswers, answersArea, serveyId, q.id, q.type);
+          }catch(e){ answersArea.innerHTML = '<div class="muted">Failed to load answers</div>'; }
+        } else { answersArea.style.display = 'none'; }
+      });
+      div.appendChild(answersArea);
+      return div;
+    }
+
+    function renderAnswersList(qAnswers, container, serveyId, qid, qType){
+      container.innerHTML = '';
+      const list = document.createElement('div'); list.className = 'answers-list';
+      (Array.isArray(qAnswers)?qAnswers:[]).forEach(a=>{
+        const it = document.createElement('div'); it.className='answer-item'; it.textContent = a.answer || '';
+        const edit = document.createElement('button'); edit.className='link'; edit.textContent='Edit';
+        edit.addEventListener('click', async ()=>{
+          const val = prompt('Edit answer', a.answer || ''); if(val == null) return;
+          try{ await updateAnswer(serveyId, a.id, { question_id: qid, answer: val }); showMessage(container, 'Answer updated'); const all = await fetchAnswers(serveyId); renderAnswersList((Array.isArray(all)?all:[]).filter(x=>String(x.question_id)===String(qid)), container, serveyId, qid, qType); }catch(e){ showMessage(container, 'Failed to update answer', false); }
+        });
+        it.appendChild(edit); list.appendChild(it);
+      });
+      container.appendChild(list);
+
+      // If question type is 'text' do not allow answers
+      if(qType === 'text'){
+        const note = document.createElement('div'); note.className='muted'; note.textContent = 'This is a text question — answers are freeform responses and not managed here.';
+        container.appendChild(note);
+        return;
+      }
+
+      // add new answer form
+      const af = document.createElement('form'); af.className='answer-form'; af.style.marginTop='6px';
+      const ai = document.createElement('input'); ai.placeholder='Answer text'; ai.type='text'; ai.style.width='70%';
+      const ab = document.createElement('button'); ab.className='btn'; ab.type='submit'; ab.textContent='Add Answer';
+      af.appendChild(ai); af.appendChild(ab);
+
+      // For boolean questions limit to 2 answers
+      if(qType === 'boolean'){
+        if((Array.isArray(qAnswers)?qAnswers:[]).length >= 2){
+          const note = document.createElement('div'); note.className='muted'; note.textContent = 'Boolean questions can only have two answers.';
+          container.appendChild(note);
+          return;
+        }
+      }
+
+      af.addEventListener('submit', async (e)=>{ e.preventDefault(); try{ await createAnswer(serveyId, { question_id: qid, answer: ai.value }); showMessage(container, 'Answer added'); ai.value=''; const all = await fetchAnswers(serveyId); renderAnswersList((Array.isArray(all)?all:[]).filter(x=>String(x.question_id)===String(qid)), container, serveyId, qid, qType); }catch(e){ showMessage(container, 'Failed to add answer', false); } });
+      container.appendChild(af);
+    }
+
+    // question form submit handler
+    qForm.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const sid = idUpdate.value;
+      if(!sid){ showMessage(container, 'Select or create a servey first', false); return; }
+      const payload = { servey_id: sid, question: qText.value, type: qType.value };
+      try{
+        if(qSubmit.dataset.editing){ const qid = qSubmit.dataset.editing; await updateQuestion(sid, qid, payload); showMessage(container, 'Question updated'); delete qSubmit.dataset.editing; qSubmit.textContent='Add Question'; }
+        else { await createQuestion(sid, payload); showMessage(container, 'Question added'); }
+        qText.value=''; qType.value='text';
+        refreshQuestions(sid);
+      }catch(err){ showMessage(container, 'Failed to save question', false); }
+    });
 
     // initial load
     refreshAllLists(); refreshMineList();
