@@ -1,7 +1,8 @@
 :root{--bg:#f7f9fc;--accent:#5c6cff;--muted:#6b7280}
+html,body{height:100%}
 *{box-sizing:border-box;font-family:Inter,Segoe UI,Arial,Helvetica,sans-serif}
-body{margin:0;background:var(--bg);color:#111}
-#app{max-width:980px;margin:36px auto;padding:18px}
+body{margin:0;background:var(--bg);color:#111;display:flex;flex-direction:column;min-height:100vh}
+#app{flex:1;max-width:980px;margin:36px auto;padding:18px}
 .hero{display:flex;gap:28px;align-items:center;padding:36px;background:#fff;border-radius:12px;box-shadow:0 6px 20px rgba(12,20,40,0.06)}
 .hero .left{flex:1}
 .hero h1{margin:0 0 8px;font-size:28px}
@@ -62,8 +63,4 @@ input[type=text],input[type=email],input[type=password]{padding:10px;border:1px 
 .footer-bottom{max-width:980px;margin:12px auto 0;color:#9aa7c7;font-size:13px}
 
 /* Auth widget */
-.auth-widget{position:fixed;right:14px;bottom:14px;background:#fff;padding:10px;border-radius:10px;box-shadow:0 10px 30px rgba(12,20,40,0.12);z-index:9999;min-width:180px;font-size:13px}
-.auth-widget .aw-title{font-weight:700;margin-bottom:6px}
-.auth-widget .aw-controls{display:flex;gap:6px;flex-wrap:wrap}
-.auth-widget .aw-btn{padding:6px 8px;border-radius:6px;border:1px solid rgba(12,20,40,0.06);background:#f7f9fc;cursor:pointer}
-.auth-widget .aw-status{margin-top:8px;color:var(--muted);font-size:13px}
+/* auth widget styles removed */
