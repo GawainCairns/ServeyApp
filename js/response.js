@@ -8,6 +8,7 @@ async function init() {
 	const nameEl = document.getElementById('servey-name');
 	const descEl = document.getElementById('servey-desc');
 	const questionsEl = document.getElementById('questions');
+	let serveyId = null;
 
 	if (!s_code) {
 		errorEl.textContent = 'Missing s_code in URL. Append ?s_code=...';
@@ -22,7 +23,7 @@ async function init() {
 		const servey = await serveyRes.json();
 
 		// server should return the servey object containing numeric id
-		const serveyId = servey.id ?? serveyIdFromBody(servey);
+		serveyId = servey.id ?? serveyIdFromBody(servey);
 		nameEl.textContent = servey.name || 'Untitled Servey';
 		descEl.textContent = servey.discription || '';
 
@@ -45,13 +46,23 @@ async function init() {
 
 		renderQuestions(questions, answers, questionsEl);
 
-		// wire up submit to collect responses (does not POST by default)
+		// wire up submit to POST responses one question at a time
 		const form = document.getElementById('response-form');
-		form.addEventListener('submit', (e) => {
+		form.addEventListener('submit', async (e) => {
 			e.preventDefault();
-			const payload = collectResponses(questions);
-			console.log('Collected responses:', payload);
-			alert('Responses collected in console (not sent).');
+			const submitBtn = document.getElementById('submit-btn');
+			submitBtn.disabled = true;
+			errorEl.textContent = '';
+			try {
+				await postResponsesSequentially(serveyId, questions);
+				alert('Responses submitted successfully.');
+			} catch (err) {
+				console.error(err);
+				errorEl.textContent = err.message || String(err);
+				alert('Failed to submit responses. See error message.');
+			} finally {
+				submitBtn.disabled = false;
+			}
 		});
 
 	} catch (err) {
@@ -150,6 +161,40 @@ function collectResponses(questions) {
 		}
 	});
 	return result;
+}
+
+// Fetch last response id and post responses one at a time to server
+async function postResponsesSequentially(serveyId, questions) {
+	if (!serveyId) throw new Error('Missing servey id');
+	// get last response id
+	const rIdRes = await fetch('http://localhost:3000/response/r_id');
+	if (!rIdRes.ok) throw new Error('Failed to fetch last response id');
+	const rIdBody = await rIdRes.json();
+	let lastId = null;
+	if (typeof rIdBody === 'number') lastId = rIdBody;
+	else if (rIdBody && typeof rIdBody === 'object') lastId = rIdBody.last_id ?? rIdBody.id ?? Object.values(rIdBody)[0];
+	lastId = Number(lastId) || 0;
+	const responder_id = lastId + 1;
+
+	for (const q of (questions || [])) {
+		let answer = null;
+		if (q.type === 'text') {
+			answer = document.querySelector(`#q-${q.id}`)?.value ?? '';
+		} else {
+			answer = document.querySelector(`input[name="q-${q.id}"]:checked`)?.value ?? null;
+		}
+
+		const payload = { question_id: q.id, answer, responder_id };
+		const postRes = await fetch(`http://localhost:3000/response/${serveyId}`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(payload),
+		});
+		if (!postRes.ok) {
+			const text = await postRes.text().catch(()=>null);
+			throw new Error(`Failed to post response for question ${q.id}: ${postRes.status} ${text || ''}`);
+		}
+	}
 }
 
 window.addEventListener('DOMContentLoaded', init);
